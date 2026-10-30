@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExamGuard AI | Incident Intelligence Platform</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Chart.js for smooth, interactive light-theme visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- PERSISTENT LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">EG</div>
+        <div>
+          <div class="brand-name">ExamGuard AI</div>
+          <div class="brand-sub">Incident Intelligence</div>
+        </div>
+      </div>
+
+      <div class="sidebar-status">
+        <div class="status-badge">
+          <span class="live-dot" id="liveDot"></span>
+          <span id="systemStatusText">INCIDENT ACTIVE</span>
+        </div>
+        <span class="font-mono" style="font-size: 0.72rem; color: var(--primary); font-weight: 600;">36 SNAPSHOTS</span>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-item active" data-view="view-overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Overview</span>
+        </div>
+        <div class="nav-item" data-view="view-timeline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Incident Timeline</span>
+        </div>
+        <div class="nav-item" data-view="view-rca">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span>Root-Cause Analysis</span>
+        </div>
+        <div class="nav-item" data-view="view-shap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>SHAP Explainability</span>
+        </div>
+        <div class="nav-item" data-view="view-whatif">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span>What-If Simulator</span>
+        </div>
+        <div class="nav-item" data-view="view-complaints">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Complaint Analytics</span>
+        </div>
+        <div class="nav-item" data-view="view-reports">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Incident Reports</span>
+        </div>
+        <div class="nav-item" data-view="view-evaluation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span>Model Evaluation</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div>ExamGuard AI Platform v2.0</div>
+        <div style="margin-top: 2px;">PS 1.4 Hackathon Edition</div>
+      </div>
+    </aside>
+
+    <!-- MAIN BODY -->
+    <main class="main-wrapper">
+      <!-- SLIM TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="badge badge-critical" id="topbarSeverity">CRITICAL SEVERITY</span>
+          <div>
+            <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);" id="topbarTitle">Database Bottleneck Focus</span>
+            <span class="font-mono" style="font-size: 0.78rem; color: var(--text-muted); margin-left: 10px;" id="topbarTimestamp">2026-10-29 09:40:00</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="selector-group">
+            <span class="selector-label">Inspect Timestamp:</span>
+            <select class="custom-select" id="samplePicker"></select>
+          </div>
+          <button class="btn btn-primary" onclick="quickJumpToRCA()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Investigate RCA</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEWS CONTAINER -->
+      <div class="content-body">
+        
+        <!-- 1. OVERVIEW VIEW -->
+        <section class="view-section active-view" id="view-overview">
+          <!-- KPI Strip -->
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <div class="kpi-title">Response Latency</div>
+              <div class="kpi-value" id="kpiResponse">3,400 ms</div>
+              <div class="kpi-delta" id="kpiResponseDelta" style="color: var(--rose-crit);">+871% above baseline</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">DB Query Time</div>
+              <div class="kpi-value" id="kpiDb">2,950 ms</div>
+              <div class="kpi-delta" id="kpiDbDelta" style="color: var(--rose-crit);">Threshold &le; 150ms</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">CPU Load</div>
+              <div class="kpi-value" id="kpiCpu">55.4%</div>
+              <div class="kpi-delta" style="color: var(--teal-healthy);">Baseline &le; 70%</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">HTTP 5xx Errors</div>
+              <div class="kpi-value" id="kpiErrors">18</div>
+              <div class="kpi-delta" style="color: var(--amber-warn);">18 in 5m interval</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Active Students</div>
+              <div class="kpi-value" id="kpiUsers">1,420</div>
+              <div class="kpi-delta" style="color: var(--primary);">9 Telemetry Streams</div>
+            </div>
+          </div>
+
+          <!-- Main Timeline & Synthesis Grid -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+            <!-- Timeline Chart Panel -->
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Multi-Stream Telemetry Timeline</div>
+                  <div class="panel-subtitle">Response Latency vs Database Query Time (3-Hour Window)</div>
+                </div>
+                <span class="badge badge-ai">Live Telemetry</span>
+              </div>
+              <div style="position: relative; height: 320px;">
+                <canvas id="overviewChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Diagnostic Synthesis Card -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Diagnostic Synthesis</div>
+                <span class="badge badge-normal" id="ovTopScore">98.0% Match</span>
+              </div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Leading Candidate</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 2px 0 12px 0;" id="ovTopHypothesis">Database Bottleneck</div>
+
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Key Observed Evidence</div>
+                <div id="ovEvidencePills"></div>
+
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin: 16px 0 6px 0;">Recommended Immediate Action</div>
+                <div style="background: var(--indigo-light); border: 1px solid var(--indigo-border); border-radius: var(--radius-sm); padding: 12px;" id="ovNextActionBox">
+                  <div style="font-weight: 700; font-size: 0.85rem; color: var(--indigo-ai);" id="ovNextCheckTitle">Inspect DB Lock Contention</div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="ovNextCheckTool">Tool: PostgreSQL pg_stat_activity</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Event Stream Milestones -->
+          <div class="panel" style="margin-top: 8px;">
+            <div class="panel-header">
+              <div class="panel-title">Chronological Anomaly Milestones</div>
+              <span class="panel-subtitle">Click milestone to focus telemetry</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;" id="milestoneCards"></div>
+          </div>
+        </section>
+
+        <!-- 2. INCIDENT TIMELINE VIEW -->
+        <section class="view-section" id="view-timeline">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Full Multi-Metric Performance Explorer</div>
+                <div class="panel-subtitle">Synchronized Latency, Compute, and Error Rates</div>
+              </div>
+            </div>
+            <div style="position: relative; height: 380px;">
+              <canvas id="deepTimelineChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Lead-Lag Correlation -->
+          <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px;">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Lead-Lag Cross-Correlation Analysis</div>
+                <div class="panel-subtitle">What spiked before user response degradation?</div>
+              </div>
+              <div style="position: relative; height: 260px;">
+                <canvas id="leadLagChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Patient Zero Detection</div>
+                <span class="badge badge-critical">First Breach</span>
+              </div>
+              <div id="patientZeroBox" style="padding: 10px 0;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. ROOT-CAUSE ANALYSIS VIEW -->
+        <section class="view-section" id="view-rca">
+          <!-- Ranked Hypotheses Horizontal Bar -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Ranked Competing Root-Cause Hypotheses</div>
+                <div class="panel-subtitle">Multi-hypothesis score ranking (0–100% domain matching)</div>
+              </div>
+            </div>
+            <div style="position: relative; height: 260px;">
+              <canvas id="hypothesesChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Evidence Matrix Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Visual Diagnostic Evidence Matrix</div>
+                <div class="panel-subtitle">Signal matching across all candidate incident causes</div>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="matrix-table" id="evidenceMatrixTable">
+                <thead>
+                  <tr>
+                    <th>Candidate Cause</th>
+                    <th>Response Time</th>
+                    <th>CPU Load</th>
+                    <th>Memory</th>
+                    <th>DB Latency</th>
+                    <th>Network</th>
+                    <th>Errors</th>
+                    <th>Complaints</th>
+                  </tr>
+                </thead>
+                <tbody id="matrixTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. SHAP EXPLAINABILITY VIEW -->
+        <section class="view-section" id="view-shap">
+          <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px;">
+            <!-- Local SHAP Waterfall -->
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Local Feature Contributions (Selected Snapshot)</div>
+                  <div class="panel-subtitle" id="shapLocalSubtitle">Exact Shapley values driving prediction</div>
+                </div>
+                <span class="badge badge-ai">SHAP TreeExplainer</span>
+              </div>
+              <div style="position: relative; height: 320px;">
+                <canvas id="shapLocalChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Global Feature Importance -->
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Global Feature Importance</div>
+                  <div class="panel-subtitle">Dataset-wide predictive influence (Gini)</div>
+                </div>
+              </div>
+              <div style="position: relative; height: 320px;">
+                <canvas id="shapGlobalChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plain Language Narrative -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Administrator Operational Takeaway</div>
+            </div>
+            <div id="shapNarrativeBox" style="font-size: 0.92rem; line-height: 1.6; color: var(--text-main);"></div>
+            <div style="margin-top: 12px; font-size: 0.78rem; color: var(--text-muted); border-top: 1px solid var(--border-light); padding-top: 8px;">
+              ℹ️ <b>Attribution vs Causation:</b> SHAP explains the statistical model's boundary decisions. It does not replace physical infrastructure verification.
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. WHAT-IF SIMULATOR VIEW -->
+        <section class="view-section" id="view-whatif">
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px;">
+            <!-- Interactive Sliders Panel -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Hypothetical Telemetry Overrides</div>
+                <button class="btn btn-secondary" onclick="resetWhatIfSliders()" style="padding: 4px 10px; font-size: 0.75rem;">Reset Values</button>
+              </div>
+              
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Response Time:</span>
+                  <span class="font-mono" id="valSliderRt">3,400 ms</span>
+                </div>
+                <input type="range" class="custom-slider" id="sliderRt" min="50" max="4000" step="25" oninput="updateWhatIfDebounced()">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>DB Query Latency:</span>
+                  <span class="font-mono" id="valSliderDb">2,950 ms</span>
+                </div>
+                <input type="range" class="custom-slider" id="sliderDb" min="10" max="3500" step="25" oninput="updateWhatIfDebounced()">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>CPU Usage:</span>
+                  <span class="font-mono" id="valSliderCpu">55.4%</span>
+                </div>
+                <input type="range" class="custom-slider" id="sliderCpu" min="5" max="100" step="1" oninput="updateWhatIfDebounced()">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Memory Usage:</span>
+                  <span class="font-mono" id="valSliderMem">58.0%</span>
+                </div>
+                <input type="range" class="custom-slider" id="sliderMem" min="20" max="100" step="1" oninput="updateWhatIfDebounced()">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Error Count:</span>
+                  <span class="font-mono" id="valSliderErr">18</span>
+                </div>
+                <input type="range" class="custom-slider" id="sliderErr" min="0" max="100" step="1" oninput="updateWhatIfDebounced()">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Network Latency:</span>
+                  <span class="font-mono" id="valSliderNet">26.5 ms</span>
+                </div>
+                <input type="range" class="custom-slider" id="sliderNet" min="10" max="700" step="10" oninput="updateWhatIfDebounced()">
+              </div>
+            </div>
+
+            <!-- Simulation Comparison Panel -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Model Re-Prediction Outcome</div>
+                <span class="badge badge-normal" id="whatifShiftBadge">Prediction Maintained</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div style="background: var(--bg-subtle); border-radius: var(--radius-md); padding: 16px; text-align: center;">
+                  <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Observed State</div>
+                  <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 4px;" id="whatifOrigClass">Database Bottleneck</div>
+                  <div style="font-size: 0.8rem; color: var(--primary);" id="whatifOrigConf">98.1% Confidence</div>
+                </div>
+
+                <div style="background: var(--teal-light); border: 1px solid var(--teal-border); border-radius: var(--radius-md); padding: 16px; text-align: center;">
+                  <div style="font-size: 0.72rem; color: var(--teal-healthy); font-weight: 700; text-transform: uppercase;">Simulated State</div>
+                  <div style="font-size: 1.25rem; font-weight: 800; color: var(--teal-healthy); margin-top: 4px;" id="whatifSimClass">Normal</div>
+                  <div style="font-size: 0.8rem; color: var(--teal-healthy);" id="whatifSimConf">89.4% Confidence</div>
+                </div>
+              </div>
+
+              <div style="position: relative; height: 220px;">
+                <canvas id="whatIfCompareChart"></canvas>
+              </div>
+
+              <div id="whatifCouplingAlerts" style="margin-top: 14px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. COMPLAINT ANALYTICS VIEW -->
+        <section class="view-section" id="view-complaints">
+          <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 24px;">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Complaint Topic Distribution</div>
+                <div class="panel-subtitle">Regex NLP Categorization</div>
+              </div>
+              <div style="position: relative; height: 280px;">
+                <canvas id="complaintPieChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Representative Student Feedback</div>
+                <div class="panel-subtitle">Classified by operational category</div>
+              </div>
+              <div style="max-height: 280px; overflow-y: auto;" id="complaintsList"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. INCIDENT REPORTS VIEW -->
+        <section class="view-section" id="view-reports">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Executive Incident Post-Mortem Preview</div>
+                <div class="panel-subtitle">Official auditable report generated directly from verified telemetry</div>
+              </div>
+              <button class="btn btn-primary" onclick="downloadOfficialPdf()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download Official PDF</span>
+              </button>
+            </div>
+
+            <div id="reportMarkdownPreview" style="font-size: 0.9rem; line-height: 1.6; color: var(--text-main); background: var(--bg-subtle); padding: 24px; border-radius: var(--radius-md);"></div>
+          </div>
+        </section>
+
+        <!-- 8. MODEL EVALUATION VIEW -->
+        <section class="view-section" id="view-evaluation">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Algorithm Comparison</div>
+                <div class="panel-subtitle">Holdout Test vs 3-Fold Stratified CV</div>
+              </div>
+              <div style="position: relative; height: 300px;">
+                <canvas id="evalCompareChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Random Forest Confusion Matrix</div>
+                <div class="panel-subtitle">Zero target leakage on holdout split</div>
+              </div>
+              <div id="evalMatrixBox" style="overflow-x: auto; padding: 12px 0;"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Synthetic Data Limitations & Disclosures</div>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;" id="evalLimitationsText"></p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
