@@ -135,7 +135,7 @@ def get_sample_details(index: int):
 @app.get("/api/overview")
 def get_overview(index: int = 8):
     """Returns KPI strip, patient zero, lead-lag data, and event milestones."""
-    first_anom = CORRELATION.detect_first_anomaly()
+    first_anom = CORRELATION.detect_onset_for_window(index)
     lead_lag = CORRELATION.compute_lead_lag_correlations("response_time_ms")
     windows = CORRELATION.group_incident_windows()
     global_imp = EXPLAINER.get_global_importance()

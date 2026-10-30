@@ -139,6 +139,71 @@ class TemporalCorrelationEngine:
         results.sort(key=lambda x: x["max_abs_corr"], reverse=True)
         return results
 
+
+    def detect_onset_for_window(self, target_idx: int) -> dict:
+        target_row = self.df.iloc[target_idx]
+        incident_type = target_row.get('incident_type', 'Normal')
+        scenario_id = target_row.get('scenario_id', 'unknown')
+
+        scenario_slice = self.df[self.df['scenario_id'] == scenario_id] if 'scenario_id' in self.df.columns else self.df[self.df['incident_type'] == incident_type]
+
+        if scenario_slice.empty or incident_type == 'Normal':
+            ts_str = target_row['timestamp'].strftime('%H:%M:%S') if hasattr(target_row['timestamp'], 'strftime') else str(target_row['timestamp'])
+            return {
+                'window_label': 'Baseline Normal Operation',
+                'onset_timestamp': str(target_row['timestamp']),
+                'first_breached_metric': 'All Metrics Nominal',
+                'first_breached_value': 0,
+                'complaint_at_first_anomaly': target_row.get('complaint_text', 'No complaints logged'),
+                'narrative': f'System operating normally at {ts_str}. Telemetry metrics remain within baseline thresholds.'
+            }
+
+        first_row = scenario_slice.iloc[0]
+        first_time = first_row['timestamp']
+
+        breached = []
+        for metric, thresh in self.thresholds.items():
+            val = first_row.get(metric, 0)
+            if val > thresh:
+                breached.append({
+                    'metric': metric,
+                    'value': val,
+                    'threshold': thresh,
+                    'excess_pct': round(((val - thresh) / thresh) * 100, 1)
+                })
+
+        if not breached:
+            for metric, thresh in self.thresholds.items():
+                val = target_row.get(metric, 0)
+                if val > thresh:
+                    breached.append({
+                        'metric': metric,
+                        'value': val,
+                        'threshold': thresh,
+                        'excess_pct': round(((val - thresh) / thresh) * 100, 1)
+                    })
+
+        breached.sort(key=lambda x: x['excess_pct'], reverse=True)
+        primary = breached[0] if breached else None
+
+        metric_name = primary['metric'] if primary else 'System Load'
+        metric_val = primary['value'] if primary else 'Elevated'
+        metric_thresh = primary['threshold'] if primary else 'Normal'
+        time_str = first_time.strftime('%H:%M:%S') if hasattr(first_time, 'strftime') else str(first_time)
+
+        return {
+            'window_label': f'{incident_type} Window Onset',
+            'onset_timestamp': str(first_time),
+            'first_breached_metric': metric_name,
+            'first_breached_value': metric_val,
+            'complaint_at_first_anomaly': first_row.get('complaint_text', target_row.get('complaint_text', 'No complaint logged')),
+            'narrative': (
+                f'{incident_type} anomaly onset at {time_str}, '
+                f'initiated by \'{metric_name}\' reaching {metric_val} '
+                f'(normal baseline: {metric_thresh}).'
+            )
+        }
+
     def group_incident_windows(self, min_consecutive_steps: int = 2) -> List[Dict[str, Any]]:
         """
         Identifies continuous time windows of active degradation for incident demarcation.

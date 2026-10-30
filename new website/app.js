@@ -465,11 +465,18 @@ function renderDeepTimelineChart() {
   const pz = state.overviewData ? state.overviewData.first_anomaly : null;
   const pzBox = document.getElementById('patientZeroBox');
   if (pzBox && pz) {
+    const isNominal = pz.first_breached_metric === 'All Metrics Nominal';
+    const tagColor = isNominal ? 'var(--teal-healthy)' : 'var(--rose-crit)';
+    const headerTitle = pz.window_label ? pz.window_label : 'Incident Patient Zero';
     pzBox.innerHTML = `
-      <div style="font-size: 1.1rem; font-weight: 800; color: var(--rose-crit); margin-bottom: 6px;">${pz.first_breached_metric}</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">${headerTitle}</span>
+        <span class="badge" style="background: ${isNominal ? 'var(--teal-light)' : 'var(--rose-light)'}; color: ${tagColor}; font-size:0.72rem;">${isNominal ? 'NOMINAL' : 'INITIAL TRIGGER'}</span>
+      </div>
+      <div style="font-size: 1.15rem; font-weight: 800; color: ${tagColor}; margin-bottom: 6px;">${pz.first_breached_metric} ${pz.first_breached_value > 0 ? '(' + pz.first_breached_value + ')' : ''}</div>
       <div style="font-size: 0.88rem; color: var(--text-main); line-height: 1.5;">${pz.narrative}</div>
-      <div style="margin-top: 14px; font-size: 0.80rem; color: var(--text-muted);">
-        <b>Initial Student Ticket:</b> <i>"${pz.complaint_at_first_anomaly}"</i>
+      <div style="margin-top: 14px; font-size: 0.80rem; color: var(--text-muted); background: var(--bg-subtle); padding: 8px 12px; border-radius: var(--radius-sm);">
+        <b>Initial User Ticket:</b> <i>"${pz.complaint_at_first_anomaly}"</i>
       </div>
     `;
   }
