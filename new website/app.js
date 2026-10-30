@@ -41,7 +41,10 @@ function switchView(viewId) {
   if (target) target.classList.add('active-view');
 
   // Trigger relevant view renderers
-  if (viewId === 'view-timeline') renderDeepTimelineChart();
+  if (viewId === 'view-timeline') {
+    renderDeepTimelineChart();
+    renderLeadLagChart();
+  }
   if (viewId === 'view-rca') renderRcaView();
   if (viewId === 'view-shap') renderShapView();
   if (viewId === 'view-whatif') renderWhatIfView();
